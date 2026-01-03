@@ -1,68 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LeaveRequestForm } from '@/components/leave/LeaveRequestForm';
 import { LeaveRequestList } from '@/components/leave/LeaveRequestList';
 import { LeaveRequest, LeaveType } from '@/types/hrms';
-import { Calendar, Clock, TreePalm, Stethoscope, Wallet } from 'lucide-react';
+import { Calendar, TreePalm, Stethoscope, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AnimatedContainer, AnimatedCard } from '@/components/ui/animated-container';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useSkeletonLoading } from '@/hooks/useSkeletonLoading';
-
-const initialLeaveRequests: LeaveRequest[] = [
-  {
-    id: '1',
-    userId: '2',
-    userName: 'Rajesh Kumar',
-    leaveType: 'paid',
-    startDate: '2026-01-15',
-    endDate: '2026-01-17',
-    reason: 'Family function - wedding ceremony',
-    status: 'approved',
-    appliedOn: '2026-01-02',
-    adminComment: 'Approved. Enjoy the function!',
-  },
-  {
-    id: '2',
-    userId: '2',
-    userName: 'Rajesh Kumar',
-    leaveType: 'sick',
-    startDate: '2025-12-20',
-    endDate: '2025-12-21',
-    reason: 'Fever and cold, need rest',
-    status: 'approved',
-    appliedOn: '2025-12-19',
-  },
-];
+import { leaveAPI } from '@/services/api';
+import { toast } from 'sonner';
 
 export default function Leave() {
   const { user } = useAuth();
   const isLoading = useSkeletonLoading(1500);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(initialLeaveRequests);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [balance, setBalance] = useState({ earnedLeave: 0, sickLeave: 0, casualLeave: 0 });
+  const [dataLoading, setDataLoading] = useState(true);
 
-  const handleSubmit = (data: { leaveType: LeaveType; startDate: string; endDate: string; reason: string }) => {
-    const newRequest: LeaveRequest = {
-      id: Date.now().toString(),
-      userId: user?.id || '',
-      userName: `${user?.firstName} ${user?.lastName}`,
-      leaveType: data.leaveType,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      reason: data.reason,
-      status: 'pending',
-      appliedOn: new Date().toISOString().split('T')[0],
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [leavesData, balanceData] = await Promise.all([
+          leaveAPI.getMyRequests(),
+          leaveAPI.getBalance()
+        ]);
+        setLeaveRequests(leavesData.leaves || []);
+        setBalance(balanceData);
+      } catch (error) {
+        console.error('Failed to fetch leave data:', error);
+        toast.error('Failed to load leave data');
+      } finally {
+        setDataLoading(false);
+      }
     };
-    setLeaveRequests([newRequest, ...leaveRequests]);
+
+    if (!isLoading) {
+      fetchData();
+    }
+  }, [isLoading]);
+
+  const handleSubmit = async (data: { leaveType: LeaveType; startDate: string; endDate: string; reason: string }) => {
+    try {
+      await leaveAPI.submitRequest(data);
+      toast.success('Leave request submitted successfully!');
+
+      // Refresh leave requests
+      const leavesData = await leaveAPI.getMyRequests();
+      setLeaveRequests(leavesData.leaves || []);
+    } catch (error) {
+      console.error('Failed to submit leave request:', error);
+      toast.error('Failed to submit leave request');
+    }
   };
 
   const leaveBalance = [
-    { type: 'Earned Leave', balance: 12, total: 18, icon: TreePalm, color: 'from-emerald-500 to-teal-500' },
-    { type: 'Sick Leave', balance: 8, total: 12, icon: Stethoscope, color: 'from-blue-500 to-cyan-500' },
-    { type: 'Casual Leave', balance: 5, total: 8, icon: Wallet, color: 'from-purple-500 to-pink-500' },
+    { type: 'Earned Leave', balance: balance.earnedLeave, total: 18, icon: TreePalm, color: 'from-emerald-500 to-teal-500' },
+    { type: 'Sick Leave', balance: balance.sickLeave, total: 12, icon: Stethoscope, color: 'from-blue-500 to-cyan-500' },
+    { type: 'Casual Leave', balance: balance.casualLeave, total: 8, icon: Wallet, color: 'from-purple-500 to-pink-500' },
   ];
 
-  if (isLoading) {
+  if (isLoading || dataLoading) {
     return (
       <DashboardLayout>
         <PageSkeleton type="form" />
@@ -74,74 +73,70 @@ export default function Leave() {
     <DashboardLayout>
       <AnimatedContainer>
         <div className="flex items-center gap-3 mb-8">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200 }}
-            className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20"
+            className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/50"
           >
-            <Calendar className="w-8 h-8 text-primary" />
+            <Calendar className="h-6 w-6 text-white" />
           </motion.div>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold">Leave Management</h1>
-            <p className="text-muted-foreground">Apply for leave and track your balance</p>
-          </div>
-        </div>
-
-        {/* Leave Balance */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-8">
-          {leaveBalance.map((item, i) => (
-            <AnimatedCard key={item.type} delay={i * 0.1} className="stat-card overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{item.type}</p>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-bold">{item.balance}</span>
-                    <span className="text-sm text-muted-foreground">/ {item.total} days</span>
-                  </div>
-                </div>
-                <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className={`p-3 rounded-2xl bg-gradient-to-br ${item.color} shadow-lg`}
-                >
-                  <item.icon className="w-6 h-6 text-white" />
-                </motion.div>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(item.balance / item.total) * 100}%` }}
-                  transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
-                  className={`h-full bg-gradient-to-r ${item.color} rounded-full`}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {item.total - item.balance} days used this year
-              </p>
-            </AnimatedCard>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
           >
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+              Leave Management
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">Manage your time off requests</p>
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {leaveBalance.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <AnimatedCard key={index} delay={index * 0.1}>
+                <div className="relative overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-5`} />
+                  <div className="relative p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`p-3 rounded-xl bg-gradient-to-br ${item.color} shadow-lg`}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                          {item.balance}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">of {item.total}</p>
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {item.type}
+                    </h3>
+                    <div className="mt-3 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(item.balance / item.total) * 100}%` }}
+                        transition={{ duration: 1, delay: index * 0.1 }}
+                        className={`h-full bg-gradient-to-r ${item.color} rounded-full`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </AnimatedCard>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <AnimatedCard delay={0.3}>
             <LeaveRequestForm onSubmit={handleSubmit} />
-          </motion.div>
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="lg:col-span-2"
-          >
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              My Leave Requests
-            </h3>
+          </AnimatedCard>
+
+          <AnimatedCard delay={0.4}>
             <LeaveRequestList requests={leaveRequests} />
-          </motion.div>
+          </AnimatedCard>
         </div>
       </AnimatedContainer>
     </DashboardLayout>

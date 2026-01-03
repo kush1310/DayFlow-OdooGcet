@@ -1,73 +1,58 @@
-# Welcome to your Lovable project
+# DayFlow HR Management System
 
-## Project info
+## Project Info
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Description**: Complete HR Management System built with React, TypeScript, and Node.js
 
-## How can I edit this code?
+## How to Run
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Follow these steps to run the application locally:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Step 1: Install dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Start the backend server
+node Backend.cjs
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 3: In a new terminal, start the frontend development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## Technologies Used
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Frontend**: Vite + TypeScript + React
+- **UI Components**: shadcn/ui
+- **Styling**: Tailwind CSS
+- **Backend**: Node.js + Express
+- **Database**: MySQL (XAMPP)
+- **Email**: Nodemailer with Brevo SMTP
+- **PDF Generation**: PDFKit
 
-## How can I deploy this project?
+## Features
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- ✅ Employee Authentication & Authorization
+- ✅ Attendance Tracking (Check-in/Check-out)
+- ✅ Leave Management with Email Notifications
+- ✅ Payroll Management with PDF Payslips
+- ✅ Admin Dashboard & Analytics
+- ✅ HR Permissions System
+- ✅ Real-time Email Notifications
 
-## Can I connect a custom domain to my Lovable project?
+## Login Credentials
 
-Yes, you can!
+- **Admin**: kush@dayflow.com / kush2026
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Configuration
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. Ensure XAMPP MySQL is running
+2. Backend configured to use database: `hrms`
+3. Brevo SMTP configured for email notifications
+
+---
+
+Made with ❤️ for DayFlow HR Suite © 2026

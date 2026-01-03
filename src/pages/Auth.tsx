@@ -33,7 +33,7 @@ export default function Auth() {
           toast.success('स्वागत है! Welcome back!');
           navigate('/dashboard');
         } else {
-          toast.error('Invalid credentials. Try admin@dayflow.com or employee@dayflow.com');
+          toast.error('Invalid credentials. Use kush@dayflow.com / kush2026');
         }
       } else {
         if (password.length < 6) {
@@ -70,10 +70,10 @@ export default function Auth() {
           <div className="absolute top-1/2 -left-20 w-60 h-60 bg-pink-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-20 w-40 h-40 bg-orange-500/20 rounded-full blur-2xl" />
         </div>
-        
+
         <div className="relative z-10 flex flex-col justify-center px-16">
           {/* Logo Placeholder */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -83,8 +83,8 @@ export default function Auth() {
               <span className="text-4xl font-bold text-white">DF</span>
             </div>
           </motion.div>
-          
-          <motion.h2 
+
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -95,8 +95,8 @@ export default function Auth() {
               perfectly aligned.
             </span>
           </motion.h2>
-          
-          <motion.p 
+
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -105,7 +105,7 @@ export default function Auth() {
             Streamline your HR operations with our comprehensive management system built for Indian enterprises.
           </motion.p>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -144,7 +144,7 @@ export default function Auth() {
 
       {/* Right Panel - Auth Form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-8 bg-background">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -152,7 +152,7 @@ export default function Auth() {
         >
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center shadow-lg"
@@ -306,17 +306,16 @@ export default function Auth() {
           </div>
 
           {isLogin && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="mt-8 p-4 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-2xl border border-primary/10"
             >
-              <p className="text-xs text-muted-foreground text-center mb-3 font-medium">Demo Credentials</p>
+              <p className="text-xs text-muted-foreground text-center mb-3 font-medium">Demo Admin Credentials</p>
               <div className="space-y-2 text-sm text-center">
-                <p><span className="text-muted-foreground">Admin:</span> <span className="font-medium">admin@dayflow.com</span></p>
-                <p><span className="text-muted-foreground">Employee:</span> <span className="font-medium">employee@dayflow.com</span></p>
-                <p className="text-xs text-muted-foreground mt-2">(any password with 6+ chars)</p>
+                <p><span className="text-muted-foreground">Email:</span> <span className="font-medium">kush@dayflow.com</span></p>
+                <p><span className="text-muted-foreground">Password:</span> <span className="font-medium">kush2026</span></p>
               </div>
             </motion.div>
           )}

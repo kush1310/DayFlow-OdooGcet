@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { BarChart3, TrendingUp, Users, Calendar, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -5,37 +6,84 @@ import { AnimatedContainer } from '@/components/ui/animated-container';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useSkeletonLoading } from '@/hooks/useSkeletonLoading';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { analyticsAPI, employeeAPI } from '@/services/api';
+import { toast } from 'sonner';
 
-const attendanceData = [
-  { month: 'Aug', present: 42, absent: 3, leave: 3 },
-  { month: 'Sep', present: 44, absent: 2, leave: 2 },
-  { month: 'Oct', present: 40, absent: 4, leave: 4 },
-  { month: 'Nov', present: 43, absent: 2, leave: 3 },
-  { month: 'Dec', present: 41, absent: 3, leave: 4 },
-  { month: 'Jan', present: 42, absent: 2, leave: 4 },
-];
-
-const departmentData = [
-  { name: 'Engineering', value: 18, color: '#8b5cf6' },
-  { name: 'Design', value: 8, color: '#ec4899' },
-  { name: 'Marketing', value: 7, color: '#f59e0b' },
-  { name: 'Sales', value: 10, color: '#10b981' },
-  { name: 'HR', value: 5, color: '#3b82f6' },
-];
-
-const leaveData = [
-  { month: 'Aug', earned: 12, sick: 8, casual: 5 },
-  { month: 'Sep', earned: 10, sick: 6, casual: 4 },
-  { month: 'Oct', earned: 14, sick: 9, casual: 6 },
-  { month: 'Nov', earned: 11, sick: 7, casual: 5 },
-  { month: 'Dec', earned: 16, sick: 10, casual: 8 },
-  { month: 'Jan', earned: 13, sick: 8, casual: 6 },
-];
+// Default colors for department chart
+const DEPARTMENT_COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e'];
 
 export default function Analytics() {
   const isLoading = useSkeletonLoading(1500);
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [departmentData, setDepartmentData] = useState<any[]>([]);
+  const [leaveData, setLeaveData] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    avgAttendance: '0%',
+    leaveRate: '0%',
+    avgHours: '0h',
+    growth: '0%'
+  });
+  const [dataLoading, setDataLoading] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const [attendanceRes, leaveTrendsRes, employeeStatsRes] = await Promise.all([
+          analyticsAPI.getAttendanceAnalytics(),
+          analyticsAPI.getLeaveTrends(),
+          employeeAPI.getStatistics()
+        ]);
+
+        // Process attendance data
+        if (attendanceRes.data && attendanceRes.data.length > 0) {
+          setAttendanceData(attendanceRes.data);
+        } else {
+          setAttendanceData([]);
+        }
+
+        // Process leave trends
+        if (leaveTrendsRes.trends && leaveTrendsRes.trends.length > 0) {
+          setLeaveData(leaveTrendsRes.trends);
+        } else {
+          setLeaveData([]);
+        }
+
+        // Process department statistics
+        if (employeeStatsRes.departments && employeeStatsRes.departments.length > 0) {
+          const deptData = employeeStatsRes.departments.map((dept: any, index: number) => ({
+            name: dept.name || dept.department,
+            value: dept.count || dept.value || 0,
+            color: DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]
+          }));
+          setDepartmentData(deptData);
+        } else {
+          setDepartmentData([]);
+        }
+
+        // Calculate statistics
+        if (attendanceRes.stats) {
+          setStats({
+            avgAttendance: attendanceRes.stats.avgAttendance || '0%',
+            leaveRate: attendanceRes.stats.leaveRate || '0%',
+            avgHours: attendanceRes.stats.avgHours || '0h',
+            growth: attendanceRes.stats.growth || '0%'
+          });
+        }
+
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+        toast.error('Failed to load some analytics data');
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    if (!isLoading) {
+      fetchAnalytics();
+    }
+  }, [isLoading]);
+
+  if (isLoading || dataLoading) {
     return (
       <DashboardLayout>
         <PageSkeleton type="dashboard" />
@@ -47,7 +95,7 @@ export default function Analytics() {
     <DashboardLayout>
       <AnimatedContainer>
         <div className="flex items-center gap-3 mb-8">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200 }}
@@ -64,10 +112,10 @@ export default function Analytics() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Avg Attendance', value: '92%', icon: Users, color: 'from-emerald-500 to-teal-500' },
-            { label: 'Leave Rate', value: '8%', icon: Calendar, color: 'from-amber-500 to-orange-500' },
-            { label: 'Avg Hours', value: '8.2h', icon: Clock, color: 'from-blue-500 to-cyan-500' },
-            { label: 'Growth', value: '+12%', icon: TrendingUp, color: 'from-purple-500 to-pink-500' },
+            { label: 'Avg Attendance', value: stats.avgAttendance, icon: Users, color: 'from-emerald-500 to-teal-500' },
+            { label: 'Leave Rate', value: stats.leaveRate, icon: Calendar, color: 'from-amber-500 to-orange-500' },
+            { label: 'Avg Hours', value: stats.avgHours, icon: Clock, color: 'from-blue-500 to-cyan-500' },
+            { label: 'Growth', value: stats.growth, icon: TrendingUp, color: 'from-purple-500 to-pink-500' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}

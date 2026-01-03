@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { User, Mail, Phone, MapPin, Briefcase, Calendar, Edit, Camera, Building2, BadgeIndianRupee } from 'lucide-react';
@@ -9,19 +9,58 @@ import { AnimatedContainer, AnimatedCard } from '@/components/ui/animated-contai
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useSkeletonLoading } from '@/hooks/useSkeletonLoading';
 import { formatIndianDate, formatINR, formatIndianPhone } from '@/utils/formatters';
+import { userAPI } from '@/services/api';
 
 export default function Profile() {
   const { user } = useAuth();
   const isLoading = useSkeletonLoading(1500);
   const [isEditing, setIsEditing] = useState(false);
-  const [phone, setPhone] = useState(user?.phone || '+91 98765 43210');
-  const [address, setAddress] = useState(user?.address || 'Sector 18, Gurugram, Haryana 122015');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
-    toast.success('Profile updated successfully! प्रोफ़ाइल अपडेट हो गई');
-    setIsEditing(false);
+  // Fetch profile data from backend
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await userAPI.getProfile();
+        setPhone(data.user.phone || '+91 98765 43210');
+        setAddress(data.user.address || 'Sector 18, Gurugram, Haryana 122015');
+        if (data.user.profile_picture) {
+          setProfileImage(data.user.profile_picture);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+        toast.error('Failed to load profile data');
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    if (!isLoading) {
+      fetchProfile();
+    }
+  }, [isLoading]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await userAPI.updateProfile({
+        phone,
+        address,
+        profilePicture: profileImage || undefined
+      });
+      toast.success('Profile updated successfully! प्रोफ़ाइल अपडेट हो गई');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +75,7 @@ export default function Profile() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || dataLoading) {
     return (
       <DashboardLayout>
         <PageSkeleton type="profile" />
@@ -48,7 +87,7 @@ export default function Profile() {
     <DashboardLayout>
       <AnimatedContainer>
         <div className="flex items-center gap-3 mb-8">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200 }}
@@ -66,7 +105,7 @@ export default function Profile() {
           {/* Profile Card */}
           <AnimatedCard delay={0.1} className="stat-card text-center">
             <div className="relative inline-block mb-4">
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mx-auto overflow-hidden ring-4 ring-primary/10"
               >
@@ -85,7 +124,7 @@ export default function Profile() {
                 accept="image/*"
                 className="hidden"
               />
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => fileInputRef.current?.click()}
@@ -132,15 +171,16 @@ export default function Profile() {
                     size="sm"
                     onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                     className={isEditing ? 'btn-gradient' : ''}
+                    disabled={isSaving}
                   >
-                    {isEditing ? 'Save Changes' : <><Edit className="w-4 h-4 mr-2" />Edit</>}
+                    {isSaving ? 'Saving...' : isEditing ? 'Save Changes' : <><Edit className="w-4 h-4 mr-2" />Edit</>}
                   </Button>
                 </motion.div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-5">
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 }}
@@ -151,7 +191,7 @@ export default function Profile() {
                     </label>
                     <p className="font-medium">{user?.firstName} {user?.lastName}</p>
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.15 }}
@@ -162,7 +202,7 @@ export default function Profile() {
                     </label>
                     <p className="font-medium">{user?.employeeId}</p>
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
@@ -176,7 +216,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-5">
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 }}
@@ -199,7 +239,7 @@ export default function Profile() {
                           placeholder="+91 98765 43210"
                         />
                       ) : (
-                        <motion.p 
+                        <motion.p
                           key="text"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -210,7 +250,7 @@ export default function Profile() {
                       )}
                     </AnimatePresence>
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.15 }}
@@ -233,7 +273,7 @@ export default function Profile() {
                           placeholder="Enter your address"
                         />
                       ) : (
-                        <motion.p 
+                        <motion.p
                           key="text"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -244,7 +284,7 @@ export default function Profile() {
                       )}
                     </AnimatePresence>
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}

@@ -1,21 +1,43 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { QuickActions } from '@/components/dashboard/QuickActions';
-import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { Users, UserCheck, Calendar, ClipboardList, Clock, TrendingUp, IndianRupee, Sparkles } from 'lucide-react';
+import { Users, TrendingUp, Building2, BarChart, UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { AnimatedContainer, AnimatedList, AnimatedListItem } from '@/components/ui/animated-container';
+import { AnimatedContainer, AnimatedCard } from '@/components/ui/animated-container';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useSkeletonLoading } from '@/hooks/useSkeletonLoading';
-import { getIndianGreeting, formatINR } from '@/utils/formatters';
+import { employeeAPI, analyticsAPI } from '@/services/api';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const navigate = useNavigate();
   const isLoading = useSkeletonLoading(1500);
+  const [stats, setStats] = useState<any>(null);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await analyticsAPI.getDashboard();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    if (!isLoading) {
+      fetchStats();
+    }
+  }, [isLoading]);
+
+  if (isLoading || dataLoading) {
     return (
       <DashboardLayout>
         <PageSkeleton type="dashboard" />
@@ -23,201 +45,142 @@ export default function Dashboard() {
     );
   }
 
+  const statsCards = [
+    {
+      title: 'Total Employees',
+      value: stats?.totalEmployees || 0,
+      icon: Users,
+      color: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+    },
+    {
+      title: 'Present Today',
+      value: stats?.presentToday || 0,
+      icon: TrendingUp,
+      color: 'from-green-500 to-emerald-500',
+      bgColor: 'bg-green-50 dark:bg-green-900/20'
+    },
+    {
+      title: 'On Leave',
+      value: stats?.onLeave || 0,
+      icon: Building2,
+      color: 'from-orange-500 to-red-500',
+      bgColor: 'bg-orange-50 dark:bg-orange-900/20'
+    },
+    {
+      title: 'Pending Requests',
+      value: stats?.pendingRequests || 0,
+      icon: BarChart,
+      color: 'from-purple-500 to-pink-500',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20'
+    }
+  ];
+
   return (
     <DashboardLayout>
       <AnimatedContainer>
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-primary">DayFlow HR Suite</span>
-          </div>
-          <h1 className="text-2xl lg:text-3xl font-bold mb-1">
-            {getIndianGreeting()}, <span className="gradient-text">{user?.firstName}!</span>
-          </h1>
-          <p className="text-muted-foreground">
-            {isAdmin ? 'Here\'s what\'s happening with your team today.' : 'Here\'s your work overview for today.'}
-          </p>
-        </motion.div>
+        <div className="flex items-center justify-between mb-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+              Welcome back, {user?.firstName}! 👋
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Here's what's happening with your team today
+            </p>
+          </motion.div>
+        </div>
 
-        {/* Stats */}
-        {isAdmin ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-            <StatCard
-              title="Total Employees"
-              value={48}
-              icon={Users}
-              variant="primary"
-              trend={{ value: 12, isPositive: true }}
-            />
-            <StatCard
-              title="Present Today"
-              value={42}
-              icon={UserCheck}
-              variant="success"
-            />
-            <StatCard
-              title="On Leave"
-              value={6}
-              icon={Calendar}
-              variant="warning"
-            />
-            <StatCard
-              title="Pending Requests"
-              value={8}
-              icon={ClipboardList}
-              variant="info"
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 mb-8">
-            <StatCard
-              title="Days Present (This Month)"
-              value={18}
-              icon={UserCheck}
-              variant="success"
-            />
-            <StatCard
-              title="Leave Balance"
-              value={12}
-              icon={Calendar}
-              variant="primary"
-            />
-            <StatCard
-              title="Avg. Work Hours"
-              value="8.5h"
-              icon={Clock}
-              variant="info"
-            />
-          </div>
-        )}
-
-        {/* Quick Actions - Employee Only */}
-        {!isAdmin && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              Quick Actions
-            </h2>
-            <QuickActions />
-          </div>
-        )}
-
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            {isAdmin ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="stat-card"
-              >
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  Team Overview
-                </h3>
-                <AnimatedList className="space-y-3">
-                  {[
-                    { name: 'Rajesh Kumar', dept: 'Engineering', status: 'present' },
-                    { name: 'Priya Sharma', dept: 'Design', status: 'present' },
-                    { name: 'Amit Patel', dept: 'Marketing', status: 'leave' },
-                    { name: 'Sneha Gupta', dept: 'Sales', status: 'present' },
-                    { name: 'Arjun Singh', dept: 'Engineering', status: 'half-day' },
-                  ].map((employee, i) => (
-                    <AnimatedListItem key={i}>
-                      <motion.div 
-                        whileHover={{ scale: 1.01, x: 4 }}
-                        className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
-                              {employee.name.split(' ').map(n => n[0]).join('')}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{employee.name}</p>
-                            <p className="text-xs text-muted-foreground">{employee.dept}</p>
-                          </div>
-                        </div>
-                        <span className={`status-badge ${
-                          employee.status === 'present' ? 'status-present' : 
-                          employee.status === 'leave' ? 'status-leave' : 'status-halfday'
-                        }`}>
-                          {employee.status === 'half-day' ? 'Half Day' : employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
-                        </span>
-                      </motion.div>
-                    </AnimatedListItem>
-                  ))}
-                </AnimatedList>
-              </motion.div>
-            ) : (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="stat-card"
-              >
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  This Week's Attendance
-                </h3>
-                <div className="grid grid-cols-5 gap-2 lg:gap-3">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, i) => {
-                    const statuses = ['present', 'present', 'present', 'half-day', 'present'];
-                    const status = statuses[i];
-                    return (
-                      <motion.div 
-                        key={day} 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4 + i * 0.05 }}
-                        whileHover={{ scale: 1.05 }}
-                        className="text-center p-3 lg:p-4 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
-                      >
-                        <p className="text-xs text-muted-foreground mb-2">{day}</p>
-                        <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                          status === 'present' ? 'bg-emerald-500' : 
-                          status === 'half-day' ? 'bg-blue-500' : 'bg-red-500'
-                        }`} />
-                        <p className="text-xs font-medium">
-                          {status === 'present' ? '8h' : status === 'half-day' ? '4h' : '-'}
-                        </p>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-
-                {/* Monthly Summary */}
-                <div className="mt-6 pt-6 border-t border-border">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-emerald-600">22</p>
-                      <p className="text-xs text-muted-foreground">Present Days</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-amber-600">2</p>
-                      <p className="text-xs text-muted-foreground">Leaves Taken</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">176h</p>
-                      <p className="text-xs text-muted-foreground">Work Hours</p>
-                    </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {statsCards.map((stat, index) => (
+            <AnimatedCard key={stat.title} delay={index * 0.1}>
+              <div className={`p-6 rounded-xl ${stat.bgColor}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      {stat.title}
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                      {stat.value}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
+                    <stat.icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </div>
-
-          <div>
-            <RecentActivity />
-          </div>
+              </div>
+            </AnimatedCard>
+          ))}
         </div>
+
+        {/* Quick Actions */}
+        <AnimatedCard delay={0.5}>
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              Quick Actions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button
+                onClick={() => navigate('/employees')}
+                className="h-auto p-4 flex flex-col items-start bg-gradient-to-br from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white"
+              >
+                <Users className="h-6 w-6 mb-2" />
+                <span className="font-medium">View Employees</span>
+                <span className="text-xs opacity-80 mt-1">Manage team members</span>
+              </Button>
+
+              <Button
+                onClick={() => navigate('/leave-approvals')}
+                className="h-auto p-4 flex flex-col items-start bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+              >
+                <BarChart className="h-6 w-6 mb-2" />
+                <span className="font-medium">Leave Approvals</span>
+                <span className="text-xs opacity-80 mt-1">{stats?.pendingRequests || 0} pending</span>
+              </Button>
+
+              <Button
+                onClick={() => navigate('/analytics')}
+                className="h-auto p-4 flex flex-col items-start bg-gradient-to-br from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+              >
+                <TrendingUp className="h-6 w-6 mb-2" />
+                <span className="font-medium">Analytics</span>
+                <span className="text-xs opacity-80 mt-1">View reports</span>
+              </Button>
+            </div>
+          </div>
+        </AnimatedCard>
+
+        {/* Recent Activity */}
+        <AnimatedCard delay={0.6} className="mt-6">
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+              System Status
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  All systems operational
+                </p>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Database: Connected (hrms)
+                </p>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Email service: Active (Brevo SMTP)
+                </p>
+              </div>
+            </div>
+          </div>
+        </AnimatedCard>
       </AnimatedContainer>
     </DashboardLayout>
   );
