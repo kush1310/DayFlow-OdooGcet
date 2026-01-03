@@ -1,0 +1,17 @@
+
+  .card {
+    @apply bg-white border border-slate-200 rounded-2xl shadow-lg;
+  }
+  .input {
+    @apply w-full h-11 px-4 border border-slate-200 rounded-xl
+           focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  }
+  .btn {
+    @apply w-full h-11 bg-indigo-600 text-white rounded-xl font-bold
+           hover:bg-indigo-700 transition;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl
+           text-slate-600 hover:bg-indigo-50 hover:text-indigo-600;
+  }
+

@@ -1,0 +1,21 @@
+<body onload="protectPage()" class="bg-slate-100">
+<div class="max-w-3xl mx-auto mt-10 bg-white p-8 rounded-2xl shadow">
+<h2 class="text-xl font-bold mb-4">Apply Leave</h2>
+
+<textarea id="reason" class="w-full p-3 border rounded-xl" placeholder="Reason"></textarea>
+
+<button onclick="applyLeave()"
+class="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold">
+Submit
+</button>
+</div>
+
+<script src="auth.js"></script>
+<script>
+function applyLeave(){
+ if(!reason.value){alert("Reason required");return;}
+ localStorage.setItem("leave",{reason:reason.value,status:"Pending"});
+ alert("Leave submitted");
+}
+</script>
+</body>
