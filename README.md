@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # DayFlow HR Management System
 
 ## Project Info
@@ -56,3 +57,6 @@ This project is built with:
 ---
 
 Made with ❤️ for DayFlow HR Suite © 2026
+=======
+odoo X GCET
+>>>>>>> 7efe8d1f2ea221d5d795d89cd54db8ee9e47aba1
