@@ -14,6 +14,7 @@ import Leave from "./pages/Leave";
 import LeaveApprovals from "./pages/LeaveApprovals";
 import Payroll from "./pages/Payroll";
 import Employees from "./pages/Employees";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ function AppRoutes() {
       <Route path="/leave-approvals" element={<ProtectedRoute adminOnly><LeaveApprovals /></ProtectedRoute>} />
       <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
+      <Route path="/analytics" element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
